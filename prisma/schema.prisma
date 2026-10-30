@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum ConsultationStatus {
+  BOOKED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id            String          @id @default(uuid()) @db.Uuid
+  email         String          @unique @db.VarChar(255)
+  passwordHash  String
+  role          Role
+  isActive      Boolean         @default(true)
+  mfaSecret     String?
+  mfaEnabled    Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  patient       PatientProfile?
+  doctor        DoctorProfile?
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  @@index([role, isActive])
+}
+
+model PatientProfile {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @unique @db.Uuid
+  fullName      String         @db.VarChar(160)
+  phone         String?        @db.VarChar(32)
+  dateOfBirth   DateTime?
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultations Consultation[]
+}
+
+model DoctorProfile {
+  id              String             @id @default(uuid()) @db.Uuid
+  userId          String             @unique @db.Uuid
+  fullName        String             @db.VarChar(160)
+  specialty       String             @db.VarChar(100)
+  bio             String?            @db.VarChar(2000)
+  consultationFee Int                @default(0)
+  isVerified      Boolean            @default(false)
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slots           AvailabilitySlot[]
+  consultations   Consultation[]
+
+  @@index([specialty, isVerified])
+}
+
+model AvailabilitySlot {
+  id            String         @id @default(uuid()) @db.Uuid
+  doctorId      String         @db.Uuid
+  startsAt      DateTime
+  endsAt        DateTime
+  timezone      String         @default("UTC") @db.VarChar(64)
+  isActive      Boolean        @default(true)
+  isBooked      Boolean        @default(false)
+  doctor        DoctorProfile  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  consultations Consultation[]
+  createdAt     DateTime       @default(now())
+
+  @@unique([doctorId, startsAt, endsAt])
+  @@index([doctorId, isActive, isBooked, startsAt])
+}
+
+model Consultation {
+  id             String             @id @default(uuid()) @db.Uuid
+  patientId      String             @db.Uuid
+  doctorId       String             @db.Uuid
+  slotId         String             @db.Uuid
+  status         ConsultationStatus @default(BOOKED)
+  reason         String?            @db.VarChar(1000)
+  idempotencyKey String             @unique @db.VarChar(128)
+  cancelledAt    DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  patient        PatientProfile     @relation(fields: [patientId], references: [id])
+  doctor         DoctorProfile      @relation(fields: [doctorId], references: [id])
+  slot           AvailabilitySlot   @relation(fields: [slotId], references: [id])
+  prescription   Prescription?
+  payment        Payment?
+
+  @@index([patientId, createdAt])
+  @@index([doctorId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([slotId, status])
+}
+
+model Prescription {
+  id             String       @id @default(uuid()) @db.Uuid
+  consultationId String       @unique @db.Uuid
+  content        Json
+  createdAt      DateTime     @default(now())
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id                String        @id @default(uuid()) @db.Uuid
+  consultationId    String        @unique @db.Uuid
+  amount            Int
+  currency          String        @default("INR") @db.VarChar(3)
+  status            PaymentStatus @default(PENDING)
+  providerReference String?       @unique
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  consultation      Consultation  @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?   @db.Uuid
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String   @db.VarChar(100)
+  entityType String   @db.VarChar(100)
+  entityId   String?  @db.VarChar(100)
+  requestId  String?  @db.VarChar(100)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+}
