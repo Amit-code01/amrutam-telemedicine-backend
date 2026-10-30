@@ -1,83 +1,82 @@
 # Amrutam Telemedicine Backend
 
-A production-oriented telemedicine backend built with **TypeScript, Express, Prisma, and PostgreSQL** for the Amrutam Backend Developer Assignment.
+A TypeScript-based REST API for a telemedicine platform, built for the **Amrutam Backend Developer Assignment**. The backend supports patient and doctor workflows, consultation booking, prescription management, administrative operations, and security-focused access controls.
 
-The system supports patient and doctor workflows, doctor availability, consultation booking, consultation lifecycle management, prescriptions, role-based access control, audit logging, and administrative analytics.
+**Repository:** [Amit-code01/amrutam-telemedicine-backend](https://github.com/Amit-code01/amrutam-telemedicine-backend)  
+**Demo video:** [Watch the API walkthrough](https://drive.google.com/file/d/1VONWAJkY9fwbYhtEUNp15S_nUNod-7x0/view?usp=sharing)
 
-The implementation focuses on reliable booking workflows, secure access to healthcare data, and maintainable backend architecture. PostgreSQL is the source of truth for booking concurrency, while idempotency controls help prevent duplicate consultation creation.
+> This is an assignment implementation. See [Security and limitations](#security-and-limitations) for production deployment considerations.
 
-## Key Features
+## Contents
 
-- **Authentication and authorization:** JWT authentication, role-based access control, refresh-token rotation, and TOTP-based MFA support.
-- **Doctor discovery:** Search and filter doctors by supported criteria.
-- **Availability management:** Doctors can manage their consultation slots.
-- **Consultation booking:** Patient booking flow with idempotency and database-backed concurrency handling.
-- **Consultation lifecycle:** Manage consultation status transitions and prescription workflows.
-- **Auditability:** Audit events for relevant operations, with sensitive health information excluded from audit metadata.
-- **Admin functionality:** Administrative routes and analytics.
-- **API documentation:** Swagger UI and a raw OpenAPI specification.
-- **Automated quality checks:** TypeScript type checking, linting, formatting checks, unit tests, integration tests, and CI.
-- **Containerized development:** Docker Compose setup with PostgreSQL and migration support.
+- [Features](#features)
+- [Technology stack](#technology-stack)
+- [Architecture](#architecture)
+- [Run locally](#run-locally)
+- [Run with Docker Compose](#run-with-docker-compose)
+- [API documentation and endpoints](#api-documentation-and-endpoints)
+- [Example workflow](#example-workflow)
+- [Testing and quality checks](#testing-and-quality-checks)
+- [Environment variables](#environment-variables)
+- [Assignment coverage](#assignment-coverage)
+- [Observability](#observability)
+- [Documentation](#documentation)
+- [Security and limitations](#security-and-limitations)
 
-## Engineering Highlights
+## Features
 
-### Reliable consultation booking
-
-Booking is one of the most critical workflows in a telemedicine system. Two patients should not be able to book the same doctor slot, and retrying a request should not create duplicate consultations.
-
-The backend uses:
-
-- PostgreSQL as the authoritative persistence layer.
-- Database constraints and transaction-based booking logic.
-- Idempotency keys for consultation creation.
-- Validation of slot availability before booking.
-- Integration tests for booking and access-control behavior.
-
-This approach prioritizes correctness over relying only on application-level checks.
-
-### Security and healthcare data protection
-
-The backend includes:
-
-- Short-lived access JWTs.
-- Hashed refresh tokens with rotation and revocation.
+### Authentication and access control
+- JWT-based authentication with short-lived access tokens.
+- Refresh-token rotation and revocation; refresh tokens are stored as hashes.
 - Argon2id password hashing.
-- TOTP-based MFA support.
-- Role-based access control.
-- Request validation and rate limiting.
-- Audit logging with sensitive-data exclusions.
-- Resource-level access checks.
+- Role-based access control for patient, doctor, and administrator workflows.
+- TOTP-based multi-factor authentication support.
+- Request validation, rate limiting, and resource-level access checks.
 
-Production deployment still requires infrastructure-level controls such as HTTPS, encryption at rest, secrets management, backup policies, and security review.
+### Doctor discovery and availability
+- Search and filter doctors using supported criteria.
+- Doctors can create and manage consultation availability slots.
 
-### Maintainable architecture
+### Consultation management
+- Patient consultation booking.
+- Idempotency keys to help prevent duplicate bookings on retries.
+- Database-backed booking correctness and concurrency handling.
+- Consultation status lifecycle management.
+- Prescription workflows.
 
-The project uses a modular monolith architecture. Domain modules separate authentication, users, doctors, availability, consultations, administration, and audit functionality.
+### Administration and audit
+- Administrative routes and analytics.
+- Audit events for relevant operations.
+- Sensitive health information is excluded from audit metadata.
 
-This keeps the application straightforward to develop and deploy while providing clear module boundaries for future scaling.
+### Developer experience
+- Swagger UI and an OpenAPI specification.
+- Docker Compose development environment with PostgreSQL and migration support.
+- Structured JSON logs and Prometheus metrics.
+- Unit and integration test suites with CI configuration.
 
-## Technology Stack
+## Technology stack
 
-| Area | Technologies |
+| Area | Technology |
 |---|---|
 | Runtime | Node.js 22 |
-| Language | TypeScript, strict mode |
-| API | Express 5, REST |
+| Language | TypeScript (strict mode) |
+| API framework | Express 5 |
 | Database | PostgreSQL 17 |
 | ORM and migrations | Prisma 6 |
 | Validation | Zod |
-| Authentication | JWT, jose, Argon2id, TOTP MFA |
-| Security | Helmet, CORS, rate limiting, RBAC |
-| Logging | Pino structured JSON logs |
+| Authentication | JWT (`jose`), Argon2id, TOTP MFA |
+| Security middleware | Helmet, CORS, rate limiting, RBAC |
+| Logging | Pino |
 | Metrics | Prometheus |
 | API documentation | Swagger UI, OpenAPI |
-| Testing | Vitest, Supertest |
-| Infrastructure | Docker, Docker Compose |
+| Tests | Vitest, Supertest |
+| Local infrastructure | Docker, Docker Compose |
 | CI | GitHub Actions |
 
-## Architecture and Project Structure
+## Architecture
 
-The backend follows a modular monolith architecture with clear separation between domain logic, HTTP routes, middleware, and persistence.
+The application follows a **modular monolith** approach. Domain modules organize the application while middleware handles shared HTTP concerns and Prisma manages persistence.
 
 ```text
 src/
@@ -117,169 +116,123 @@ docs/
 └── threat-model.md
 ```
 
-## Assignment Coverage
+### Booking reliability
 
-The following summarizes the implementation and documentation based on the current project.
+Consultation booking is a critical workflow: the same doctor slot should not be booked more than once, and retrying a request should not create duplicate consultations. The implementation uses PostgreSQL as the authoritative persistence layer, database constraints and transaction-based logic, slot availability validation, and idempotency keys. Integration tests cover booking and access-control behavior.
 
-| Assignment requirement | Current coverage |
-|---|---|
-| Authentication and roles | Implemented |
-| Doctor availability | Implemented |
-| Consultation booking | Implemented with idempotency and concurrency handling |
-| Consultation lifecycle | Implemented |
-| Prescriptions | Implemented |
-| Doctor search and filtering | Implemented |
-| Audit logging | Implemented |
-| Admin analytics | Implemented |
-| PostgreSQL data model and migrations | Implemented |
-| API documentation | Swagger UI and OpenAPI |
-| Automated tests and CI | Configured |
-| Dockerized development | Configured |
-| Architecture, ER model, and scaling design | Documented |
-| Security and threat model | Documented |
-| Metrics and structured logging | Implemented |
-| Production tracing, alerting, and performance validation | Requires further deployment-level validation |
-
-See `docs/assignment-checklist.md` for the requirement-by-requirement checklist.
-
-## Run Locally
+## Run locally
 
 ### Prerequisites
 
 - Node.js 22
-- Docker and Docker Compose
 - npm
+- Docker with Docker Compose
 
-### Setup
+### 1. Clone the repository
 
-1. Clone the repository.
+```bash
+git clone https://github.com/Amit-code01/amrutam-telemedicine-backend.git
+cd amrutam-telemedicine-backend
+```
 
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/amrutam-telemedicine-backend.git
-   cd amrutam-telemedicine-backend
-   ```
+### 2. Configure environment variables
 
-2. Copy the example environment file.
+Copy the example file:
 
-   ```powershell
-   Copy-Item .env.example .env
-   ```
+**PowerShell**
+```powershell
+Copy-Item .env.example .env
+```
 
-3. Configure the environment variables. Replace `JWT_ACCESS_SECRET` with a random secret of at least 32 characters. The included database credentials are for local development only.
+**macOS/Linux**
+```bash
+cp .env.example .env
+```
 
-4. Start PostgreSQL.
+Open `.env` and set `JWT_ACCESS_SECRET` to a random secret of at least 32 characters. Any credentials included in `.env.example` are for local development only. Do not use them in a deployed environment.
 
-   ```bash
-   docker compose up -d postgres
-   ```
+### 3. Start PostgreSQL
 
-5. Install dependencies and generate the Prisma client.
+```bash
+docker compose up -d postgres
+```
 
-   ```bash
-   npm ci
-   npm run db:generate
-   ```
+### 4. Install dependencies and generate Prisma Client
 
-6. Apply database migrations.
+```bash
+npm ci
+npm run db:generate
+```
 
-   ```bash
-   npm run db:migrate
-   ```
+### 5. Apply database migrations
 
-7. Optionally seed development data.
+```bash
+npm run db:migrate
+```
 
-   ```bash
-   npm run db:seed
-   ```
+### 6. (Optional) Seed development data
 
-8. Start the API.
+```bash
+npm run db:seed
+```
 
-   ```bash
-   npm run dev
-   ```
+The development seed uses `SEED_PASSWORD` and creates the demo accounts `admin@example.test`, `patient@example.test`, and `doctor@example.test`. Use only local development credentials.
 
-### Local Endpoints
+### 7. Start the API
 
-| Resource | URL |
-|---|---|
-| API | `http://localhost:3000` |
-| Swagger UI | `http://localhost:3000/docs` |
-| OpenAPI specification | `http://localhost:3000/openapi.json` |
-| Prometheus metrics | `http://localhost:3000/metrics` |
-| Liveness | `http://localhost:3000/health` |
-| Readiness | `http://localhost:3000/ready` |
+```bash
+npm run dev
+```
 
-## Docker Setup
+The API is available at `http://localhost:3000`.
 
-To build and start the application using Docker Compose:
+## Run with Docker Compose
+
+To build and start the stack, including the migration service:
 
 ```bash
 docker compose up --build
 ```
 
-The Compose configuration runs the migration service before starting the API.
-
-To inspect running services:
+Useful commands:
 
 ```bash
+# Show running services
 docker compose ps
-```
 
-To view API logs:
-
-```bash
+# Follow API logs
 docker compose logs -f api
-```
 
-To stop the local services:
-
-```bash
+# Stop services
 docker compose down
 ```
 
-To reset local development data, use:
+To reset local development data:
 
 ```bash
 docker compose down -v
 ```
 
-**Warning:** The `-v` option deletes the local database volume and its data. Do not use it if you need to preserve your database.
+**Warning:** `docker compose down -v` removes the database volume and deletes its data. Do not run it if you need to preserve local records.
 
-## Testing and Quality
+## API documentation and endpoints
 
-The project includes unit tests and integration tests for important backend behavior.
+When the API is running:
 
-Run the quality checks:
+| Resource | URL |
+|---|---|
+| API base | `http://localhost:3000` |
+| Swagger UI | `http://localhost:3000/docs` |
+| OpenAPI JSON | `http://localhost:3000/openapi.json` |
+| Prometheus metrics | `http://localhost:3000/metrics` |
+| Liveness check | `http://localhost:3000/health` |
+| Readiness check | `http://localhost:3000/ready` |
 
-```bash
-npm run typecheck
-npm run lint
-npm run format:check
-npm run test:unit
-npm run test:integration
-npm run build
-```
+Use Swagger UI for the full route list, request schemas, and response formats.
 
-Database-dependent integration tests require a disposable PostgreSQL database and migrations.
+## Example workflow
 
-PowerShell:
-
-```powershell
-$env:RUN_DB_TESTS='1'
-npm run test:integration
-```
-
-Bash:
-
-```bash
-RUN_DB_TESTS=1 npm run test:integration
-```
-
-The database-specific suite is skipped unless `RUN_DB_TESTS=1` is set. CI provisions PostgreSQL and enables the integration suite.
-
-Never run integration tests against a production database.
-
-## Example API Flow
+The following illustrates the main patient workflow. Exact required fields and response shapes are documented in Swagger.
 
 ### 1. Register a patient
 
@@ -297,7 +250,7 @@ Content-Type: application/json
 }
 ```
 
-Use the returned access token as a Bearer token for authenticated requests.
+Use a unique email and a development-only password. After registration, log in through `POST /api/v1/auth/login` and use the returned access token as a Bearer token.
 
 ### 2. Search doctors
 
@@ -320,11 +273,11 @@ Content-Type: application/json
 }
 ```
 
-The idempotency key identifies the booking request and helps protect against duplicate submissions.
+Send a unique idempotency key for each intended booking operation. Reuse the same key when retrying the same request.
 
 ### 4. Manage doctor availability
 
-Doctors can create availability slots using:
+A doctor can create an availability slot using:
 
 ```http
 POST /api/v1/availability
@@ -332,79 +285,148 @@ Authorization: Bearer <doctor-access-token>
 Content-Type: application/json
 ```
 
-The request uses ISO-8601 start and end timestamps.
+The request uses ISO-8601 start and end timestamps. Refer to Swagger for the complete schema.
 
-For the complete endpoint list and request schemas, use Swagger UI at `/docs`.
+## Testing and quality checks
 
-## Environment Variables
+Run the configured checks:
+
+```bash
+npm run typecheck
+npm run lint
+npm run format:check
+npm run test:unit
+npm run test:integration
+npm run build
+```
+
+Database-dependent integration tests require a disposable PostgreSQL database with migrations applied. The database-specific suite is opt-in using `RUN_DB_TESTS=1`.
+
+**PowerShell**
+```powershell
+$env:RUN_DB_TESTS = '1'
+npm run test:integration
+```
+
+**macOS/Linux**
+```bash
+RUN_DB_TESTS=1 npm run test:integration
+```
+
+Never run integration tests against a production database. CI provisions PostgreSQL and enables the integration suite.
+
+### Create a local administrator
+
+The repository includes a guarded administrator bootstrap script. Start the local database and apply migrations first. In PowerShell:
+
+```powershell
+$adminEmail = Read-Host 'New local admin email'
+$adminSecurePassword = Read-Host 'New local admin password (12-128 characters)' -AsSecureString
+$adminPasswordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($adminSecurePassword)
+
+try {
+  $env:ADMIN_BOOTSTRAP_EMAIL = $adminEmail
+  $env:ADMIN_BOOTSTRAP_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($adminPasswordPointer)
+  npm run db:admin:create
+}
+finally {
+  [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($adminPasswordPointer)
+  Remove-Item Env:ADMIN_BOOTSTRAP_EMAIL, Env:ADMIN_BOOTSTRAP_PASSWORD -ErrorAction SilentlyContinue
+  Remove-Variable adminEmail, adminSecurePassword, adminPasswordPointer -ErrorAction SilentlyContinue
+}
+```
+
+The script is intended for local development and is designed to refuse production mode, non-local database hosts, and existing email addresses.
+
+## Environment variables
+
+Configure these in `.env`. The `.env.example` file is the reference for local setup.
 
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection URL |
-| `JWT_ACCESS_SECRET` | JWT signing secret |
-| `ACCESS_TOKEN_TTL_SECONDS` | Access-token lifetime; default 900 seconds |
-| `REFRESH_TOKEN_TTL_DAYS` | Refresh-token lifetime; default 30 days |
-| `PORT` | API port; default 3000 |
+| `JWT_ACCESS_SECRET` | JWT signing secret; use a random secret of at least 32 characters |
+| `ACCESS_TOKEN_TTL_SECONDS` | Access-token lifetime; default is 900 seconds |
+| `REFRESH_TOKEN_TTL_DAYS` | Refresh-token lifetime; default is 30 days |
+| `PORT` | API port; default is 3000 |
 | `CORS_ORIGIN` | Comma-separated allowed origins |
 | `RATE_LIMIT_WINDOW_MS` | Rate-limit window |
-| `RATE_LIMIT_MAX` | Maximum requests per window |
+| `RATE_LIMIT_MAX` | Maximum requests within the rate-limit window |
 | `LOG_LEVEL` | Logging level |
 | `NODE_ENV` | Application environment |
-| `SEED_PASSWORD` | Development seed password |
+| `SEED_PASSWORD` | Password used by the development seed |
 
-Do not commit `.env` files or real credentials. Use `.env.example` for documented placeholder values.
+Do not commit `.env` files, private keys, tokens, or real credentials.
 
-## Documentation
+## Assignment coverage
 
-The `docs/` directory contains supporting design and operational documentation.
+This table summarizes the implementation and supporting documentation represented in this repository.
 
-- `docs/architecture.md` — architecture, booking sequence, transactions, scaling, and disaster recovery.
-- `docs/data-model.md` — ER model, database constraints, and indexes.
-- `docs/security.md` — security controls and recommendations.
-- `docs/threat-model.md` — threat scenarios and mitigations.
-- `docs/operations.md` — migrations, backups, metrics, and performance-test guidance.
-- `docs/assignment-checklist.md` — assignment requirement mapping.
+| Requirement | Coverage |
+|---|---|
+| Authentication and roles | Implemented |
+| Doctor availability | Implemented |
+| Consultation booking | Implemented with idempotency and database-backed concurrency handling |
+| Consultation lifecycle | Implemented |
+| Prescriptions | Implemented |
+| Doctor search and filtering | Implemented |
+| Audit logging | Implemented |
+| Admin analytics | Implemented |
+| PostgreSQL data model and migrations | Implemented |
+| API documentation | Swagger UI and OpenAPI |
+| Automated tests and CI | Configured |
+| Dockerized development | Configured |
+| Architecture, ER model, and scaling design | Documented |
+| Security and threat model | Documented |
+| Metrics and structured logging | Implemented |
+| Production tracing, alerting, and performance validation | Requires deployment-level validation |
+
+See [`docs/assignment-checklist.md`](docs/assignment-checklist.md) for the requirement-by-requirement checklist.
 
 ## Observability
 
-The application uses structured JSON logging through Pino and exposes Prometheus metrics through its metrics endpoint.
-
-Docker logs can be inspected using:
+The application uses Pino for structured JSON logging and exposes Prometheus metrics at `/metrics`.
 
 ```bash
+# Inspect API logs
 docker compose logs --tail=100 api
 ```
 
-Metrics can be inspected at:
+Distributed tracing, alerting, and production monitoring require deployment-level configuration and validation.
 
-```text
-http://localhost:3000/metrics
-```
+## Documentation
 
-Distributed tracing, alerting, and production monitoring require deployment-level configuration and validation. The README does not claim production SLOs have been measured.
+The `docs/` directory contains additional design and operational material:
 
-## Security and Known Limitations
+- [`docs/architecture.md`](docs/architecture.md) — architecture, booking sequence, transactions, scaling, and disaster recovery.
+- [`docs/data-model.md`](docs/data-model.md) — ER model, database constraints, and indexes.
+- [`docs/security.md`](docs/security.md) — security controls and recommendations.
+- [`docs/threat-model.md`](docs/threat-model.md) — threat scenarios and mitigations.
+- [`docs/operations.md`](docs/operations.md) — migrations, backups, metrics, and performance-test guidance.
+- [`docs/assignment-checklist.md`](docs/assignment-checklist.md) — assignment requirement mapping.
 
-This project is designed with security and reliability in mind, but a local assignment implementation is not equivalent to a fully audited production healthcare platform.
+## Security and limitations
 
-Production readiness still requires:
+This project demonstrates security and reliability practices for a telemedicine backend, but an assignment implementation is not equivalent to a fully audited production healthcare platform.
 
-- Production secrets management and key rotation.
+Production deployment still requires appropriate infrastructure and operational controls, including:
+
 - HTTPS and encryption at rest.
+- Production secrets management and key rotation.
 - Backup and restore validation.
 - Alerting and operational dashboards.
 - Dependency and container vulnerability scanning.
 - MFA recovery and email verification workflows.
 - Data retention and deletion policies.
 - External security review.
-- Load testing against the assignment's performance targets.
+- Load testing and validation of performance and availability targets.
 
-Payment is represented as a pending ledger record. A real payment processor or payment API was not specified in the assignment.
+The application does not include a real payment processor. Payment is represented as a pending ledger record because a payment gateway or payment API was not specified. Performance and availability targets are design goals and have not been measured in a production deployment.
 
-The assignment's performance and availability targets are design goals and have not been measured in a production deployment.
+---
 
-## About This Implementation
+## About
 
-This project demonstrates backend engineering decisions relevant to a telemedicine platform: secure authentication, role-based access, database-backed booking correctness, idempotent APIs, auditability, automated testing, and modular architecture.
+This implementation demonstrates backend engineering practices relevant to a telemedicine platform: secure authentication, role-based access, database-backed booking correctness, idempotent APIs, auditability, automated testing, and modular architecture.
 
-The goal is not just to expose endpoints, but to build a backend that can be understood, tested, operated, and extended safely.
+Built for the **Amrutam Pharmaceuticals Pvt. Ltd. Backend Developer Assignment**.
